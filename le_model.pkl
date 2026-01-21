@@ -1,0 +1,8 @@
+df = pd.read_csv('training_data.csv')
+X = df[['age','sex_male','height_m','weight','bf_pct','vfl','smm_kg','bmr','smoking','bp','glucose','family_cvd']]
+y = df['le_remaining']
+
+model = RandomForestRegressor(n_estimators=100, random_state=42)
+model.fit(X, y)
+
+joblib.dump(model, 'le_model.pkl')
