@@ -4,6 +4,13 @@ import numpy as np
 import joblib
 
 # ------------------ CORE LOGIC ------------------
+@st.cache_resource
+def load_ml_model():
+    try:
+        model = joblib.load("le_model.pkl")
+        return model
+    except:
+        return None
 
 @st.cache_data
 def baseline_le(age, sex):
@@ -54,6 +61,12 @@ def heuristic_predict(bca_data, health_data):
     return round(pred, 1), hrs, bmi, tips
 
 # ------------------ UI ------------------
+st.sidebar.header("⚙️ Prediction Mode")
+use_ml = st.sidebar.toggle(
+    "Use ML Prediction (experimental)",
+    value=False,
+    help="Uses trained model if available. Heuristic is recommended."
+)
 
 st.set_page_config(
     page_title="Healthy Home Life Expectancy Predictor",
@@ -87,6 +100,65 @@ glucose = st.sidebar.number_input("Fasting Glucose", 70, 300, 90)
 family_cvd = st.sidebar.checkbox("Family History of Heart Disease")
 
 if st.button("🔮 Predict Life Expectancy", type="primary"):
+    bca_data = {
+        "height_m": height_cm / 100,
+        "weight": weight,
+        "bf_pct": bf_pct,
+        "vfl": vfl,
+        "smm_kg": smm_kg,
+        "bmr": bmr,
+    }
+
+    health_data = {
+        "age": age,
+        "sex": sex,
+        "smoking": smoking,
+        "bp": bp,
+        "glucose": glucose,
+        "family_cvd": family_cvd,
+    }
+
+    # Heuristic prediction (always available)
+    le, hrs, bmi, tips = heuristic_predict(bca_data, health_data)
+
+    final_le = le
+    method_used = "Heuristic Model"
+
+    # Optional ML prediction
+    if use_ml:
+        model = load_ml_model()
+        if model is not None:
+            features = [[
+                age,
+                1 if sex == "M" else 0,
+                bca_data["height_m"],
+                weight,
+                bf_pct,
+                vfl,
+                smm_kg,
+                bmr,
+                1 if smoking else 0,
+                bp,
+                glucose,
+                1 if family_cvd else 0,
+            ]]
+            final_le = round(model.predict(features)[0], 1)
+            method_used = "ML Model (Experimental)"
+        else:
+            st.info("ML model not found. Using heuristic prediction.")
+
+    # Display results
+    col1, col2, col3 = st.columns(3)
+    col1.metric("Estimated LE", f"{final_le} years")
+    col2.metric("BMI", bmi)
+    col3.metric("Health Risk Index", f"{hrs} / 100")
+
+    st.caption(f"Prediction method: {method_used}")
+
+    st.subheader("💡 Wellness Insights")
+    for tip in tips:
+        st.write(tip)
+
     bca_data = {
         "height_m": height_cm / 100,
         "weight": weight,
