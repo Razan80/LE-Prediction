@@ -1,0 +1,4 @@
+training_data.csv
+*.csv
+*.xlsx
+__pycache__/
