@@ -7,7 +7,7 @@ import joblib
 @st.cache_resource
 def load_ml_model():
     try:
-        model = joblib.load("le_model.pkl")
+        model = joblib.load("models/le_model.pkl")
         return model
     except:
         return None
